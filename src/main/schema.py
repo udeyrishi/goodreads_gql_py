@@ -1,14 +1,18 @@
 import asyncio
 import graphene
-import urllib.request
-import xml.etree.ElementTree
-import graphene.relay as relay
+import requests
+from xml.etree import ElementTree
 
 API_ROOT = 'https://www.goodreads.com'
 
 async def fetch_xml(url):
-    file_ptr = urllib.request.urlopen(url)
-    return xml.etree.ElementTree.parse(file_ptr).getroot()
+    response = requests.get(url)
+    if response.status_code == 200:
+        return ElementTree.fromstring(response.content)
+    elif response.status_code == 404:
+        return None
+    else:
+        raise ValueError(f'Received unexpected error code {response.status_code} from Goodreads API.')
 
 class Book(graphene.ObjectType):
     title = graphene.NonNull(graphene.String, description="The title of the book.")
@@ -50,6 +54,6 @@ class Query(graphene.ObjectType):
     @staticmethod
     async def resolve_author(_, info, id):
         xml = await fetch_xml(f"{API_ROOT}/author/show.xml?id={id}&key={info.context['api_key']}")
-        return xml.findall('author')[0]
+        return None if xml is None else xml.findall('author')[0]
 
 schema = graphene.Schema(query=Query)
