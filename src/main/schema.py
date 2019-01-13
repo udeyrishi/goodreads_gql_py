@@ -14,6 +14,10 @@ async def fetch_xml(url):
     else:
         raise ValueError(f'Received unexpected error code {response.status_code} from Goodreads API.')
 
+async def fetch_author_xml(id, api_key):
+    xml = await fetch_xml(f"{API_ROOT}/author/show.xml?id={id}&key={api_key}")
+    return None if xml is None else xml.findall('author')[0]
+
 class Book(graphene.ObjectType):
     title = graphene.NonNull(
         graphene.String, 
@@ -31,6 +35,17 @@ class Book(graphene.ObjectType):
         resolver=lambda xml, info: xml.findall('isbn13')[0].text
     )
 
+    authors = graphene.NonNull(
+        graphene.List(lambda: Author),
+        description="All the authors of this book."
+    )
+
+    @staticmethod
+    async def resolve_authors(xml, info):
+        author_ids = [int(author.findall('id')[0].text) for author in xml.findall('authors')[0].findall('author')]
+        tasks = [asyncio.create_task(fetch_author_xml(id=id, api_key=info.context['api_key'])) for id in author_ids]
+        return [await author_task for author_task in tasks]
+
 class Author(graphene.ObjectType):
     id = graphene.NonNull(
         graphene.Int, 
@@ -46,6 +61,7 @@ class Author(graphene.ObjectType):
     
     books = graphene.NonNull(
         graphene.List(Book), 
+        description="All the books by the author.",
         resolver=lambda xml, info: xml.findall('books')[0].findall('book')
     )
 
@@ -54,7 +70,6 @@ class Query(graphene.ObjectType):
     
     @staticmethod
     async def resolve_author(_, info, id):
-        xml = await fetch_xml(f"{API_ROOT}/author/show.xml?id={id}&key={info.context['api_key']}")
-        return None if xml is None else xml.findall('author')[0]
+        return await fetch_author_xml(id=id, api_key=info.context['api_key'])
 
 schema = graphene.Schema(query=Query)
