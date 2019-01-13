@@ -10,8 +10,10 @@ API_KEY_ENV_VAR = 'GOODREADS_KEY'
 
 if __name__ == '__main__':
     from schema import schema
+    from data import AuthorXMLLoader
 else:
     from main.schema import schema
+    from main.data import AuthorXMLLoader
 
 def create_app():
     if API_KEY_ENV_VAR not in os.environ:
@@ -22,7 +24,16 @@ def create_app():
     asyncio.set_event_loop(loop)
 
     app = Flask(__name__)
-    app.add_url_rule('/graphql', view_func=GraphQLView.as_view('graphql', executor=AsyncioExecutor(loop=loop), schema=schema, graphiql=True, get_context=lambda: {'api_key': api_key}))
+    app.add_url_rule(
+        '/graphql', 
+        view_func=GraphQLView.as_view(
+            'graphql', 
+            executor=AsyncioExecutor(loop=loop), 
+            schema=schema, 
+            graphiql=True, 
+            get_context=lambda: {'author_loader': AuthorXMLLoader(api_key=api_key, loop=loop)}
+        )
+    )
     return app
 
 if __name__ == "__main__":

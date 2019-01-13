@@ -12,6 +12,7 @@ graphene = "*"
 flask = "*"
 flask-graphql = "*"
 requests = "*"
+aiodataloader = "*"
 
 [requires]
 python_version = "3.7"

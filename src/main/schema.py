@@ -1,22 +1,4 @@
-import asyncio
 import graphene
-import requests
-from xml.etree import ElementTree
-
-API_ROOT = 'https://www.goodreads.com'
-
-async def fetch_xml(url):
-    response = requests.get(url)
-    if response.status_code == 200:
-        return ElementTree.fromstring(response.content)
-    elif response.status_code == 404:
-        return None
-    else:
-        raise ValueError(f'Received unexpected error code {response.status_code} from Goodreads API.')
-
-async def fetch_author_xml(id, api_key):
-    xml = await fetch_xml(f"{API_ROOT}/author/show.xml?id={id}&key={api_key}")
-    return None if xml is None else xml.findall('author')[0]
 
 class Book(graphene.ObjectType):
     title = graphene.NonNull(
@@ -43,8 +25,7 @@ class Book(graphene.ObjectType):
     @staticmethod
     async def resolve_authors(xml, info):
         author_ids = [int(author.findall('id')[0].text) for author in xml.findall('authors')[0].findall('author')]
-        tasks = [asyncio.create_task(fetch_author_xml(id=id, api_key=info.context['api_key'])) for id in author_ids]
-        return [await author_task for author_task in tasks]
+        return await info.context['author_loader'].load_many(author_ids)
 
 class Author(graphene.ObjectType):
     id = graphene.NonNull(
@@ -70,6 +51,6 @@ class Query(graphene.ObjectType):
     
     @staticmethod
     async def resolve_author(_, info, id):
-        return await fetch_author_xml(id=id, api_key=info.context['api_key'])
+        return await info.context['author_loader'].load(id)
 
 schema = graphene.Schema(query=Query)
