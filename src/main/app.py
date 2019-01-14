@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Copyright (c) 2019 Udey Rishi. All rights reserved.
 
 import asyncio
 from graphql.execution.executors.asyncio import AsyncioExecutor

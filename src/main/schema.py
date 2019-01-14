@@ -1,3 +1,5 @@
+# Copyright (c) 2019 Udey Rishi. All rights reserved.
+
 import graphene
 
 class Book(graphene.ObjectType):

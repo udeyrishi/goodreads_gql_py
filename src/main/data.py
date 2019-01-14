@@ -1,3 +1,5 @@
+# Copyright (c) 2019 Udey Rishi. All rights reserved.
+
 from aiodataloader import DataLoader
 import asyncio
 

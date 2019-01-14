@@ -1,3 +1,5 @@
+# Copyright (c) 2019 Udey Rishi. All rights reserved.
+
 import logging
 import requests
 from xml.etree import ElementTree
