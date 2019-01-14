@@ -10,6 +10,7 @@ import os
 API_KEY_ENV_VAR = 'GOODREADS_KEY'
 
 if __name__ == '__main__':
+    import argparse
     from goodreads import GoodReadsXMLApi
     from data import data_loaded
     from schema import schema
@@ -18,12 +19,17 @@ else:
     from main.goodreads import GoodReadsXMLApi
     from main.schema import schema
 
-def create_app():
+def create_app(api_key=None):
     logging.basicConfig(level=logging.DEBUG)
-    if API_KEY_ENV_VAR not in os.environ:
-        raise KeyError(f'`{API_KEY_ENV_VAR}` environment variable was not defined. Please get one from https://www.goodreads.com/api.')
+
+    if api_key == None and API_KEY_ENV_VAR in os.environ:
+        logging.getLogger().debug(f'Picked GoodReads API key from environment variable `{API_KEY_ENV_VAR}`.')
+        api_key = os.environ[API_KEY_ENV_VAR]
+
+    if api_key == None:
+        raise KeyError(f'The GoodReads API key should either be supplied via command line param `-k` or via the environment variable `{API_KEY_ENV_VAR}`. Please get one from https://www.goodreads.com/api.')
     
-    api = GoodReadsXMLApi(api_key=os.environ[API_KEY_ENV_VAR])
+    api = GoodReadsXMLApi(api_key)
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
@@ -45,4 +51,7 @@ def create_app():
     return app
 
 if __name__ == "__main__":
-    create_app().run()
+    parser = argparse.ArgumentParser(description='A sample GraphQL API wrapper for the GoodReads REST API.')
+    parser.add_argument('-k', '--key', help='The GoodReads API key.')
+    args = parser.parse_args()
+    create_app(api_key=args.key).run()
